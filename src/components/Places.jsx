@@ -1,5 +1,4 @@
 export default function Places({ title, places, loadingText, fallbackText, onSelectPlace, isLoading }) {
-  console.log(places);
   return (
     <section className="places-category">
       <h2>{title}</h2>
