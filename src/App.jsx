@@ -12,8 +12,9 @@ function App() {
   const selectedPlace = useRef();
 
   const [userPlaces, setUserPlaces] = useState([]); // data state
-  const [error, setError] = useState(null); // error state
+  const [errorFetchingPlaces, setErrorFetchingPlaces] = useState(null); // error state
   const [isFetching, setIsFetching] = useState(false); // loading state
+  const [errorUpdatingPlaces, setErrorUpdatingPlaces] = useState(null);
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
 
@@ -24,7 +25,7 @@ function App() {
         const places = await fetchUserPlaces();
         setUserPlaces(places);
       } catch (error) {
-        setError({ message: error.message || "Failed to fetch user places" });
+        setErrorFetchingPlaces({ message: error.message || "Failed to fetch user places" });
       }
       setIsFetching(false)
     }
@@ -41,6 +42,7 @@ function App() {
   }
 
   async function handleSelectPlace(selectedPlace) {
+    // optimistic update, i.e. UI is updated before receiving a response from the backend
     setUserPlaces((prevPickedPlaces) => {
       if (!prevPickedPlaces) {
         prevPickedPlaces = [];
@@ -51,7 +53,12 @@ function App() {
       return [selectedPlace, ...prevPickedPlaces];
     });
 
-    await updateUserPlaces([selectedPlace, ...userPlaces]);
+    try {
+      await updateUserPlaces([selectedPlace, ...userPlaces]);
+    } catch (e) {
+      setUserPlaces(userPlaces); // rollback UI to the previous state
+      setErrorUpdatingPlaces({ message: e.message || 'Failed to update places.'})
+    }
   }
 
   const handleRemovePlace = useCallback(async function handleRemovePlace() {
@@ -62,12 +69,25 @@ function App() {
     setModalIsOpen(false);
   }, []);
 
-  if (error) {
-    return <ErrorPage title="An error occurred!" message={error.message} />
+  function handleError() {
+    setErrorUpdatingPlaces(null);
+  }
+
+  if (errorFetchingPlaces) {
+    return <ErrorPage title="An error occurred!" message={errorFetchingPlaces.message} />
   }
 
   return (
     <>
+      <Modal open={errorUpdatingPlaces} onClose={handleError} >
+        { errorUpdatingPlaces &&
+          <ErrorPage
+            title="An error occurred!"
+            message={errorUpdatingPlaces.message}
+            onConfirm={handleError}
+          /> }
+      </Modal>
+
       <Modal open={modalIsOpen} onClose={handleStopRemovePlace}>
         <DeleteConfirmation
           onCancel={handleStopRemovePlace}
