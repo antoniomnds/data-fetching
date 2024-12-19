@@ -37,3 +37,21 @@ export async function updateUserPlaces(userPlaces) {
   const responseData = await response.json()
   return responseData.message;
 }
+
+export async function removeUserPlace(userPlaceId) {
+  const response = await fetch(
+    'http://localhost:3000/user-places/' + userPlaceId,
+    {
+      method: 'DELETE',
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete user place.')
+  }
+
+  const responseData = await response.json()
+  return responseData.message;
+}
